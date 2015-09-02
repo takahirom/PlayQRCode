@@ -2,6 +2,8 @@ package takahirom.github.com.playqrcode.ui.camera;
 
 import android.content.Context;
 import android.util.Log;
+import android.view.ViewTreeObserver;
+import android.widget.Toast;
 
 import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.MultiProcessor;
@@ -21,31 +23,42 @@ public class CameraFacade {
     private CameraSourcePreview mPreview;
     private GraphicOverlay mGraphicOverlay;
 
-    public CameraFacade(Context context, CameraSourcePreview preview, GraphicOverlay graphicOverlay) {
+    public CameraFacade(final Context context, CameraSourcePreview preview, GraphicOverlay graphicOverlay) {
         this.mPreview = preview;
         mGraphicOverlay = graphicOverlay;
 
-        BarcodeDetector detector = new BarcodeDetector.Builder(context).build();;
-        detector.setProcessor(
-                new MultiProcessor.Builder<>(new GraphicBarcodeTrackerFactory()).build());
+        preview.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                mPreview.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                BarcodeDetector detector = new BarcodeDetector.Builder(context).build();
+                detector.setProcessor(
+                        new MultiProcessor.Builder<>(new GraphicBarcodeTrackerFactory()).build());
 
-        if (!detector.isOperational()) {
-            // Note: The first time that an app using barcode API is installed on a device, GMS will
-            // download a native library to the device in order to do detection.  Usually this
-            // completes before the app is run for the first time.  But if that download has not yet
-            // completed, then the above call will not detect any barcodes.
-            //
-            // isOperational() can be used to check if the required native library is currently
-            // available.  The detector will automatically become operational once the library
-            // download completes on device.
-            Log.w(TAG, "Barcode detector dependencies are not yet available.");
-        }
+                if (!detector.isOperational()) {
+                    // Note: The first time that an app using barcode API is installed on a device, GMS will
+                    // download a native library to the device in order to do detection.  Usually this
+                    // completes before the app is run for the first time.  But if that download has not yet
+                    // completed, then the above call will not detect any barcodes.
+                    //
+                    // isOperational() can be used to check if the required native library is currently
+                    // available.  The detector will automatically become operational once the library
+                    // download completes on device.
+                    Log.w(TAG, "Barcode detector dependencies are not yet available.");
+                }
 
-        mCameraSource = new CameraSource.Builder(context, detector)
-                .setRequestedPreviewSize(640, 480)
-                .setFacing(CameraSource.CAMERA_FACING_BACK)
-                .setRequestedFps(30.0f)
-                .build();
+                int height = (mPreview.getHeight() * 480) / mPreview.getWidth();
+                Toast.makeText(context, "height:" + height, Toast.LENGTH_SHORT).show();
+                mCameraSource = new CameraSource.Builder(context, detector)
+                        .setRequestedPreviewSize(height, 480)
+                        .setFacing(CameraSource.CAMERA_FACING_BACK)
+                        .setRequestedFps(30.0f)
+                        .build();
+                startCameraSource();
+            }
+        });
+
+
     }
 
     //==============================================================================================

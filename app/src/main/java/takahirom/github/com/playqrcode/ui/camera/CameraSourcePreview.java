@@ -17,6 +17,8 @@ package takahirom.github.com.playqrcode.ui.camera;
 
 import android.content.Context;
 import android.content.res.Configuration;
+import android.hardware.Camera;
+import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -27,6 +29,7 @@ import com.google.android.gms.common.images.Size;
 import com.google.android.gms.vision.CameraSource;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 
 public class CameraSourcePreview extends ViewGroup {
     private static final String TAG = "CameraSourcePreview";
@@ -84,6 +87,7 @@ public class CameraSourcePreview extends ViewGroup {
     private void startIfReady() throws IOException {
         if (mStartRequested && mSurfaceAvailable) {
             mCameraSource.start(mSurfaceView.getHolder());
+            cameraFocus(mCameraSource,Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
             if (mOverlay != null) {
                 Size size = mCameraSource.getPreviewSize();
                 int min = Math.min(size.getWidth(), size.getHeight());
@@ -99,6 +103,65 @@ public class CameraSourcePreview extends ViewGroup {
             }
             mStartRequested = false;
         }
+    }
+
+    /**
+     * <p>
+     * Sets the Mobile Vision API provided {@link com.google.android.gms.vision.CameraSource}'s
+     * focus mode. Use {@link Camera.Parameters#FOCUS_MODE_CONTINUOUS_PICTURE} or
+     * {@link Camera.Parameters#FOCUS_MODE_CONTINUOUS_VIDEO} for continuous autofocus.
+     * </p>
+     * <p>
+     * Note that the CameraSource's {@link CameraSource#start()} or
+     * {@link CameraSource#start(SurfaceHolder)} has to be called and the camera image has to be
+     * showing prior using this method as the CameraSource only creates the camera after calling
+     * one of those methods and the camera is not available immediately. You could implement some
+     * kind of a callback method for the SurfaceHolder that notifies you when the imaging is ready
+     * or use a direct action (e.g. button press) to set the focus mode.
+     * </p>
+     * <p>
+     * Check out <a href="https://github.com/googlesamples/android-vision/blob/master/face/multi-tracker/app/src/main/java/com/google/android/gms/samples/vision/face/multitracker/ui/camera/CameraSourcePreview.java#L84">CameraSourcePreview.java</a>
+     * which contains the method <code>startIfReady()</code> that has the following line:
+     * <blockquote><code>mCameraSource.start(mSurfaceView.getHolder());</code></blockquote><br>
+     * After this call you can use our <code>cameraFocus(...)</code> method because the camera is ready.
+     * </p>
+     *
+     * @param cameraSource The CameraSource built with {@link com.google.android.gms.vision.CameraSource.Builder}.
+     * @param focusMode    The focus mode. See {@link android.hardware.Camera.Parameters} for possible values.
+     * @return true if the camera's focus is set; false otherwise.
+     * @see com.google.android.gms.vision.CameraSource
+     * @see android.hardware.Camera.Parameters
+     */
+    public static boolean cameraFocus(@NonNull CameraSource cameraSource, @NonNull String focusMode) {
+        Field[] declaredFields = CameraSource.class.getDeclaredFields();
+
+        for (Field field : declaredFields) {
+            if (field.getType() == Camera.class) {
+                field.setAccessible(true);
+                try {
+                    Camera camera = (Camera) field.get(cameraSource);
+                    if (camera != null) {
+                        Camera.Parameters params = camera.getParameters();
+
+                        if (!params.getSupportedFocusModes().contains(focusMode)) {
+                            return false;
+                        }
+
+                        params.setFocusMode(focusMode);
+                        camera.setParameters(params);
+                        return true;
+                    }
+
+                    return false;
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+
+                break;
+            }
+        }
+
+        return false;
     }
 
     private class SurfaceCallback implements SurfaceHolder.Callback {
@@ -124,45 +187,51 @@ public class CameraSourcePreview extends ViewGroup {
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        int width = 320;
-        int height = 240;
-        if (mCameraSource != null) {
-            Size size = mCameraSource.getPreviewSize();
-            if (size != null) {
-                width = size.getWidth();
-                height = size.getHeight();
-            }
-        }
-
-        // Swap width and height sizes when in portrait, since it will be rotated 90 degrees
-        if (isPortraitMode()) {
-            int tmp = width;
-            width = height;
-            height = tmp;
-        }
-
         final int layoutWidth = right - left;
         final int layoutHeight = bottom - top;
 
-        // Computes height and width for potentially doing fit width.
-        int childWidth = layoutWidth;
-        int childHeight = (int)(((float) layoutWidth / (float) width) * height);
-
-        // If height is too tall using fit width, does fit height instead.
-        if (childHeight > layoutHeight) {
-            childHeight = layoutHeight;
-            childWidth = (int)(((float) layoutHeight / (float) height) * width);
-        }
-
         for (int i = 0; i < getChildCount(); ++i) {
-            getChildAt(i).layout(0, 0, childWidth, childHeight);
+            getChildAt(i).layout(0, 0, layoutWidth, layoutHeight);
         }
-
-        try {
-            startIfReady();
-        } catch (IOException e) {
-            Log.e(TAG, "Could not start camera source.", e);
-        }
+//        int width = 320;
+//        int height = 240;
+//        if (mCameraSource != null) {
+//            Size size = mCameraSource.getPreviewSize();
+//            if (size != null) {
+//                width = size.getWidth();
+//                height = size.getHeight();
+//            }
+//        }
+//
+//        // Swap width and height sizes when in portrait, since it will be rotated 90 degrees
+//        if (isPortraitMode()) {
+//            int tmp = width;
+//            width = height;
+//            height = tmp;
+//        }
+//
+//        final int layoutWidth = right - left;
+//        final int layoutHeight = bottom - top;
+//
+//        // Computes height and width for potentially doing fit width.
+//        int childWidth = layoutWidth;
+//        int childHeight = (int)(((float) layoutWidth / (float) width) * height);
+//
+//        // If height is too tall using fit width, does fit height instead.
+//        if (childHeight > layoutHeight) {
+//            childHeight = layoutHeight;
+//            childWidth = (int)(((float) layoutHeight / (float) height) * width);
+//        }
+//
+//        for (int i = 0; i < getChildCount(); ++i) {
+//            getChildAt(i).layout(0, 0, childWidth, childHeight);
+//        }
+//
+//        try {
+//            startIfReady();
+//        } catch (IOException e) {
+//            Log.e(TAG, "Could not start camera source.", e);
+//        }
     }
 
     private boolean isPortraitMode() {

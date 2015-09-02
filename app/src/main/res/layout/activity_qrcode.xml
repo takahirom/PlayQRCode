@@ -10,6 +10,7 @@
 
     <takahirom.github.com.playqrcode.ui.camera.CameraSourcePreview
         android:id="@+id/preview"
+        android:background="#55ff0000"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
