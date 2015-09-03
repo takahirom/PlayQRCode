@@ -23,6 +23,7 @@ public class CameraFacade {
     private CameraSourcePreview mPreview;
     private GraphicOverlay mGraphicOverlay;
 
+
     public CameraFacade(final Context context, CameraSourcePreview preview, GraphicOverlay graphicOverlay) {
         this.mPreview = preview;
         mGraphicOverlay = graphicOverlay;
@@ -85,7 +86,9 @@ public class CameraFacade {
     }
 
     public void releaseCameraSource() {
-        mCameraSource.release();
+        if (mCameraSource != null) {
+            mCameraSource.release();
+        }
     }
 
     //==============================================================================================
@@ -123,7 +126,9 @@ public class CameraFacade {
         public void onNewItem(int barcodeId, Barcode item) {
             mBarcodeGraphic.setId(barcodeId);
             mBarcodeGraphic.setInfo(item.rawValue);
-
+            if (mOnNewQRCodeListener != null) {
+                mOnNewQRCodeListener.onNewQRCodeListener(item);
+            }
         }
 
         /**
@@ -153,5 +158,15 @@ public class CameraFacade {
         public void onDone() {
             mOverlay.remove(mBarcodeGraphic);
         }
+    }
+
+    public interface OnNewQRCodeListener {
+        void onNewQRCodeListener(Barcode item);
+    }
+
+    private OnNewQRCodeListener mOnNewQRCodeListener;
+
+    public void setOnNewQRCodeListener(OnNewQRCodeListener onNewQRCodeListener) {
+        this.mOnNewQRCodeListener = onNewQRCodeListener;
     }
 }
