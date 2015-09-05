@@ -42,7 +42,21 @@ public class QRCodePresenter implements CameraFacade.OnNewQRCodeListener {
 
 
     @Override
-    public void onNewQRCodeListener(Barcode item) {
-        activity.startQRDetailActivity(item);
+    public void onNewQRCodeListener(Barcode barcode) {
+        switch (barcode.valueFormat) {
+            case Barcode.CONTACT_INFO:
+            case Barcode.EMAIL:
+            case Barcode.ISBN:
+            case Barcode.PHONE:
+            case Barcode.PRODUCT:
+            case Barcode.SMS:
+            case Barcode.TEXT:
+            case Barcode.URL:
+            case Barcode.WIFI:
+            case Barcode.GEO:
+            case Barcode.CALENDAR_EVENT:
+            case Barcode.DRIVER_LICENSE:
+        }
+        activity.startQRDetailActivity(barcode);
     }
 }
