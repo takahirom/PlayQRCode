@@ -1,6 +1,7 @@
 
 # Credit
 https://github.com/googlesamples/android-vision
+https://github.com/zxing/zxing
 
 # License
 This project is released under the Apache License, Version 2.0.
