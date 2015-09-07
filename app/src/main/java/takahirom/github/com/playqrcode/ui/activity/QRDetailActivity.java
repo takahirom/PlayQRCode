@@ -60,7 +60,6 @@ public class QRDetailActivity extends AppCompatActivity {
                 sb.append("(" + f.getType().getSimpleName() + ") " + fName + " = " + f.get(barcode) + "\n");
             }
             sb.append("]\n");
-            sb.append("rawValue:" + barcode.url.title);
 
         } catch (Exception e) {
             e.printStackTrace();
